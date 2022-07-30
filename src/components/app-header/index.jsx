@@ -1,4 +1,5 @@
-import React, { memo } from 'react'
+import React, { memo, useRef, useState, useEffect, useCallback } from 'react'
+import { shallowEqual, useDispatch, useSelector } from 'react-redux'
 import { NavLink } from 'react-router-dom'
 import { Input } from 'antd'
 import { SearchOutlined } from '@ant-design/icons'
@@ -6,8 +7,17 @@ import { SearchOutlined } from '@ant-design/icons'
 import { headerLinks } from '../../common/local-data'
 
 import { HeaderWrapper, HeaderLeft, HeaderRight } from './style'
+import { debounce } from '@/utils/format-utils.js'
+
+import {
+    getSearchSongListAction,
+    changeFocusStateAction,
+} from './store/actionCreator'
 
 function JMAppHeader() {
+
+    const [isRedirect, setIsRedirect] = useState(false)
+    const [value, setValue] = useState('')
 
     //确定头部点击高亮效果和底部红色小箭头
     function computedClassName({ isActive }) {
@@ -37,8 +47,57 @@ function JMAppHeader() {
         }
     }
 
-    // const inputRef = useRef()
+    const dispatch = useDispatch()
+    const { searchSongList, focusState } = useSelector(
+        (state) => ({
+            searchSongList: state.getIn(['themeHeader', 'searchSongList']),
+            focusState: state.getIn(['themeHeader', 'focusState']),
+        }),
+        shallowEqual
+    )
 
+    const inputRef = useRef()
+    // (根据当前焦点状态设置input焦点)
+    useEffect(() => {
+        // 获取焦点
+        if (focusState) inputRef.current.focus()
+        // 失去焦点
+        else inputRef.current.blur()
+    }, [focusState])
+
+    const changeInput = debounce((target) => {
+        let value = target.value.trim()
+        if (value.length < 1) return
+        // 显示下拉框
+        dispatch(changeFocusStateAction(true))
+        // 发送网络请求
+        dispatch(getSearchSongListAction(value))
+    }, 400)
+
+    // 获取焦点
+    const handleFocus = useCallback(() => {
+        // 更改为获取焦点状态
+        dispatch(changeFocusStateAction(true))
+        // 修改状态重定向状态
+        setIsRedirect(false)
+    }, [dispatch])
+
+    // 表单回车:跳转到搜索详情
+    const handleEnter = useCallback((e) => {
+        dispatch(changeFocusStateAction(false))
+        // 只要在搜索框回车: 都进行跳转
+        setIsRedirect(true)
+    }, [dispatch])
+
+    // 点击当前item歌曲项
+    // const changeCurrentSong = (id) => {
+    //     //派发action
+    //     dispatch(getSongDetailAction(id))
+    //     // 隐藏下拉框
+    //     dispatch(changeFocusStateAction(false))
+    //     // 播放音乐
+    //     document.getElementById('audio').autoplay = true
+    // }
 
     return (
         <HeaderWrapper>
@@ -60,13 +119,20 @@ function JMAppHeader() {
                 <HeaderRight>
                     <div className='search-wrapper'>
                         <Input
-                            prefix={<SearchOutlined/>} 
+                            ref={inputRef}
+                            prefix={<SearchOutlined />}
                             className='search'
-                            placeholder='音乐/电台/视频/用户'>
+                            placeholder='音乐/电台/'
+                            onChange={(e) => setIsRedirect(0) || setValue(e.target.value)}
+                            onInput={({ target }) => changeInput(target)}
+                            onFocus={handleFocus}
+                            onPressEnter={(e) => handleEnter(e)}
+                            value={value}
+                        >
                         </Input>
 
                         {/* svg键盘图标 */}
-                        {/* <div className='icons-wrapper'>
+                        <div className='icons-wrapper'>
                             <div className='ctrl-wrapper'>
                                 <svg width="15" height="15" className="DocSearch-Control-Key-Icon">
                                     <path
@@ -79,9 +145,40 @@ function JMAppHeader() {
                                 </svg>
                             </div>
                             <div className="k-wrapper">k</div>
-                        </div> */}
+                        </div>
 
                         {/* <div>下拉区域</div> */}
+                        <div
+                            className='down-slider'
+                            style={{ display: focusState ? 'block' : 'none' }}
+                        >
+                            <div className='search-header'>
+                                <span className='discover'>搜"歌曲"相关用户&gt;</span>
+                            </div>
+
+                            <div className='content'>
+                                <div className='zuo'>
+                                    <span className='song'>单曲</span>
+                                </div>
+
+                                {/* <div className="you"> */}
+                                <span className="main">
+                                    {searchSongList &&
+                                        searchSongList.map((item) => {
+                                            return (
+                                                <div
+                                                    className="item"
+                                                    key={item.id}
+                                                    // onClick={() => changeCurrentSong(item.id)}
+                                                >
+                                                    <span>{item.name}</span>-{item.artists[0].name}
+                                                </div>
+                                            )
+                                        })}
+                                </span>
+                                {/* </div> */}
+                            </div>
+                        </div>
                     </div>
                     <div className='center'>创作者中心</div>
                     <div>登录</div>

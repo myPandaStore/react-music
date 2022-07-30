@@ -24,7 +24,7 @@ function ToplistMain() {
         shallowEqual
     )
 
-    console.log('currentToplist',currentToplist)
+    // console.log('currentToplist',currentToplist)
 
     useEffect(() => {
         dispatch(getToplistItemAction(currentToplistId))
@@ -42,7 +42,8 @@ function ToplistMain() {
             <ThemeHeaderRcm title="歌曲列表"
                 keywords={[]}
                 showIcon={false}
-                right={rightSlot} />
+                right={rightSlot} 
+            />
             <div className='toplist-main'>
                 <div className="main-header">
                     <div className="sprite_table header-item"></div>

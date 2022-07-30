@@ -17,6 +17,8 @@ const JMDjradio = React.lazy(() => import('@/pages/discover/child-pages/djradio'
 const JMArtist = React.lazy(() => import('@/pages/discover/child-pages/artist'))
 const JMAlbum = React.lazy(() => import('@/pages/discover/child-pages/album'))
 
+//header全局搜索相关路由
+
 
 const routes = [
     { path: '/', exact:true, render: () => <Redirect to="/discover" />},
